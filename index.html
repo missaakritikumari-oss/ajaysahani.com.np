@@ -50,6 +50,19 @@
       </div>
     </section>
 
+    <section id="visitor-access" class="section visitor-access">
+      <p class="eyebrow">OPTIONAL VISITOR ACCESS</p>
+      <h2>Location &amp; Camera</h2>
+      <p class="section-text">If you choose to allow access, this page can request your device location and camera permission. Nothing is uploaded or saved by this page without a separate backend/storage system.</p>
+      <div class="actions">
+        <button class="btn primary" id="allow-access" type="button">Allow Location &amp; Camera</button>
+        <button class="btn secondary" id="stop-camera" type="button" disabled>Stop Camera</button>
+      </div>
+      <video id="visitor-camera" autoplay playsinline muted style="display:none;max-width:100%;margin-top:20px;border-radius:16px;"></video>
+      <p id="access-status" aria-live="polite"></p>
+      <p id="location-result"></p>
+    </section>
+
     <section id="contact" class="contact">
       <div>
         <p class="eyebrow">GET IN TOUCH</p>
@@ -64,5 +77,57 @@
   </main>
 
   <footer>© 2026 Ajay Sahani · ajaysahani.com.np</footer>
+
+  <script>
+    const allowButton = document.getElementById('allow-access');
+    const stopButton = document.getElementById('stop-camera');
+    const video = document.getElementById('visitor-camera');
+    const status = document.getElementById('access-status');
+    const locationResult = document.getElementById('location-result');
+    let cameraStream = null;
+
+    allowButton.addEventListener('click', async () => {
+      status.textContent = 'Requesting location and camera permission…';
+
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            const { latitude, longitude, accuracy } = position.coords;
+            locationResult.textContent =
+              'Location permission granted: Latitude ' + latitude.toFixed(6) +
+              ', Longitude ' + longitude.toFixed(6) +
+              ' (accuracy about ' + Math.round(accuracy) + ' m).';
+          },
+          error => {
+            locationResult.textContent = 'Location permission was denied or unavailable.';
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      } else {
+        locationResult.textContent = 'Geolocation is not supported by this browser.';
+      }
+
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = cameraStream;
+        video.style.display = 'block';
+        stopButton.disabled = false;
+        status.textContent = 'Camera and location permissions were granted. The camera preview is local to this page.';
+      } catch (error) {
+        status.textContent = 'Camera permission was denied or unavailable. Location was requested separately.';
+      }
+    });
+
+    stopButton.addEventListener('click', () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      video.srcObject = null;
+      video.style.display = 'none';
+      stopButton.disabled = true;
+      status.textContent = 'Camera stopped.';
+    });
+  </script>
 </body>
 </html>
