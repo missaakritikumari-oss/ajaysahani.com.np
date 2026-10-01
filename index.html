@@ -51,6 +51,17 @@
       </div>
     </section>
 
+    <section id="visitor-analytics" class="section visitor-access">
+      <p class="eyebrow">VISITOR ANALYTICS</p>
+      <h2>Website visit notification</h2>
+      <p class="section-text">With your consent, this website sends a visit notification to the site owner. The notification contains the visitor's public IPv4 or IPv6 address, visit time, page path, country (when available), referrer and browser user-agent. IP logging is handled by the website backend and is not obtained from your camera or location.</p>
+      <div class="actions">
+        <button class="btn primary" id="allow-analytics" type="button">Allow visitor analytics</button>
+        <button class="btn secondary" id="disable-analytics" type="button">Disable</button>
+      </div>
+      <p id="analytics-status" aria-live="polite"></p>
+    </section>
+
     <section id="visitor-access" class="section visitor-access">
       <p class="eyebrow">OPTIONAL VISITOR ACCESS</p>
       <h2>Location &amp; Camera</h2>
@@ -81,6 +92,52 @@
   <footer>© 2026 Ajay Sahani · ajaysahani.com.np</footer>
 
   <script>
+    // Set this after deploying worker/visitor-log.js.
+    const VISITOR_WORKER_URL = '';
+
+    const analyticsStatus = document.getElementById('analytics-status');
+    const allowAnalytics = document.getElementById('allow-analytics');
+    const disableAnalytics = document.getElementById('disable-analytics');
+
+    async function sendVisitEvent() {
+      if (!VISITOR_WORKER_URL) {
+        analyticsStatus.textContent = 'Visitor analytics backend is not configured yet.';
+        return;
+      }
+      try {
+        const response = await fetch(VISITOR_WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'page_visit',
+            path: window.location.pathname,
+            referrer: document.referrer
+          }),
+          keepalive: true
+        });
+        analyticsStatus.textContent = response.ok
+          ? 'Visit notification sent.'
+          : 'Visit notification could not be sent.';
+      } catch (error) {
+        analyticsStatus.textContent = 'Visitor analytics is temporarily unavailable.';
+      }
+    }
+
+    allowAnalytics.addEventListener('click', () => {
+      localStorage.setItem('visitorAnalyticsConsent', 'granted');
+      analyticsStatus.textContent = 'Visitor analytics enabled.';
+      sendVisitEvent();
+    });
+
+    disableAnalytics.addEventListener('click', () => {
+      localStorage.setItem('visitorAnalyticsConsent', 'denied');
+      analyticsStatus.textContent = 'Visitor analytics disabled.';
+    });
+
+    if (localStorage.getItem('visitorAnalyticsConsent') === 'granted') {
+      sendVisitEvent();
+    }
+
     const allowButton = document.getElementById('allow-access');
     const stopButton = document.getElementById('stop-camera');
     const video = document.getElementById('visitor-camera');
