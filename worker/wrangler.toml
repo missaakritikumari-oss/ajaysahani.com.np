@@ -1,0 +1,12 @@
+name = "ajaysahani-visitor-log"
+main = "visitor-log.js"
+compatibility_date = "2026-10-01"
+
+[observability]
+enabled = true
+
+[vars]
+ALLOWED_ORIGIN = "https://ajaysahani.com.np"
+
+[secrets]
+required = ["RESEND_API_KEY", "ALERT_EMAIL"]
